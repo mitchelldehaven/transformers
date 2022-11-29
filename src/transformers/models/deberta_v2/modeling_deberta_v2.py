@@ -1258,6 +1258,7 @@ class DebertaV2ForSequenceClassification(DebertaV2PreTrainedModel):
         drop_out = self.config.hidden_dropout_prob if drop_out is None else drop_out
         self.dropout = StableDropout(drop_out)
 
+        self.loss_fct = None
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1273,6 +1274,10 @@ class DebertaV2ForSequenceClassification(DebertaV2PreTrainedModel):
         output_type=SequenceClassifierOutput,
         config_class=_CONFIG_FOR_DOC,
     )
+
+    def set_loss_fct(self, loss_fct):
+        self.loss_fct = loss_fct
+
     # Copied from transformers.models.deberta.modeling_deberta.DebertaForSequenceClassification.forward with Deberta->DebertaV2
     def forward(
         self,
@@ -1340,8 +1345,7 @@ class DebertaV2ForSequenceClassification(DebertaV2PreTrainedModel):
                 else:
                     loss = loss_fct(logits, labels)
             elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+                loss = self.loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
             elif self.config.problem_type == "multi_label_classification":
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits, labels)

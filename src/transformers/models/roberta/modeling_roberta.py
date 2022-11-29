@@ -1160,6 +1160,7 @@ class RobertaForSequenceClassification(RobertaPreTrainedModel):
         self.roberta = RobertaModel(config, add_pooling_layer=False)
         self.classifier = RobertaClassificationHead(config)
 
+        self.loss_fct = None
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1171,6 +1172,10 @@ class RobertaForSequenceClassification(RobertaPreTrainedModel):
         expected_output="'optimism'",
         expected_loss=0.08,
     )
+
+    def set_loss_fct(self, loss_fct):
+        self.loss_fct = loss_fct
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -1225,8 +1230,7 @@ class RobertaForSequenceClassification(RobertaPreTrainedModel):
                 else:
                     loss = loss_fct(logits, labels)
             elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+                loss = self.loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
             elif self.config.problem_type == "multi_label_classification":
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits, labels)
